@@ -1,0 +1,15 @@
+{
+  "name": "Student_ID_eie4432_lab4",
+  "version": "1.0",
+  "type": "module",
+  "main": "src/Dashboard.js",
+  "scripts": {
+    "start": "node src/Dashboard.js",
+    "dev": "nodemon --watch \"src/**\" --ext \"js,json,mjs\" --exec \"npm start\""
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "nodemon": "^3.1.14"
+  }
+}
