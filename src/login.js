@@ -1,121 +1,119 @@
 import express from "express";
+import { connectDB } from "./db.js";
 
 const router = express.Router();
 
-
 async function fetch_user(username) {
-  const sql = 'SELECT * FROM users WHERE username = ?';
-  const [rows] = await pool.query(sql, [username]);
-
-  if (rows.length === 0) {
-    return null;
-  }
-
-  const row = rows[0];
-
-  return {
-    id: row.id,
-    username: row.username,
-    password: row.password,
-    role: row.role,
-    enabled: row.enabled,
-    created_at: row.created_at
-  };
+  const db = await connectDB();
+  return db.collection("users").findOne({ username });
 }
 
-async function validate_user(username, password) {
-  if (!username || !password) {
-    return { status: 'not_found' };
-  }
-  const user = await fetch_user(username);
-  if (!user) {
-    return { status: 'not_found' };
-  }
-  if (user.password !== password) {
-    return { status: 'wrong_password' };
-  }
-  if (!user.enabled) {
-    return { status: 'disabled', user: user };
-  }
-  return { status: 'success', user: user };
-}
+router.post("/login", async (req, res) => {
+  const { username, password } = req.body ?? {};
 
-router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  const result = await validate_user(username, password);
-
-  if (result.status === 'not_found' || result.status === 'wrong_password') {
-    res.status(401).json({
+  if (
+    typeof username !== "string" ||
+    typeof password !== "string" ||
+    !username.trim() ||
+    !password
+  ) {
+    res.status(400).json({
       ok: false,
-      message: 'Incorrect username or password'
+      message: "Username and password are required"
     });
     return;
   }
 
-  if (result.status === 'disabled') {
-    res.status(401).json({
-      ok: false,
-      message: `User ${result.user.username} is currently disabled`
-    });
-    return;
-  }
+  try {
+    const user = await fetch_user(username.trim());
 
-  if (result.status === 'success') {
-    const user = result.user;
+    if (!user || user.password !== password) {
+      res.status(401).json({
+        ok: false,
+        message: "Incorrect username or password"
+      });
+      return;
+    }
+
+    if (!user.enabled) {
+      res.status(401).json({
+        ok: false,
+        message: "This account is disabled"
+      });
+      return;
+    }
 
     req.session.logged = true;
     req.session.username = user.username;
     req.session.role = user.role;
-return req.session.save((err) => {
-      if (err) {
-        return res.status(500).json({ ok: false, message: 'Session error' });
-      }
-      res.json({
-        ok: true,
-        message: 'Login successful',
-        user: {
-          username: user.username,
-          role: user.role
+
+    await new Promise((resolve, reject) => {
+      req.session.save((error) => {
+        if (error) {
+          reject(error);
+          return;
         }
+        resolve();
       });
     });
-  }
 
-  res.status(500).json({
-    ok: false,
-    message: 'Unknown error'
-  });
-});
-
-router.get('/me', async (req, res) => {
-  if (req.session.logged !== true) {
-    res.status(401).json({ ok: false, message: 'Unauthorized' });
-    return;
-  }
-
-  const username = req.session.username;
-  const user = await fetch_user(username);
-
-  if (!user || !user.enabled) {
-    res.status(401).json({ ok: false, message: 'Unauthorized' });
-    return;
-  }
-
-  res.status(200).json({
-    ok: true,
-    user: {
-      username: user.username,
-      role: user.role,
-    }
-  });
-});
-
-router.get('/logout', (req, res) => {
-  req.session.destroy(() => {
     res.json({
       ok: true,
-      message: 'Logged out'
+      message: "Login successful",
+      user: {
+        username: user.username,
+        role: user.role
+      }
     });
+  } catch (error) {
+    console.error("Login failed:", error);
+    res.status(500).json({
+      ok: false,
+      message: "Unable to log in right now"
+    });
+  }
+});
+
+router.get("/me", async (req, res) => {
+  if (req.session.logged !== true || !req.session.username) {
+    res.status(401).json({ ok: false, message: "Unauthorized" });
+    return;
+  }
+
+  try {
+    const user = await fetch_user(req.session.username);
+
+    if (!user || !user.enabled) {
+      res.status(401).json({ ok: false, message: "Unauthorized" });
+      return;
+    }
+
+    res.json({
+      ok: true,
+      user: {
+        username: user.username,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error("Unable to load current user:", error);
+    res.status(500).json({
+      ok: false,
+      message: "Unable to load user right now"
+    });
+  }
+});
+
+router.post("/logout", (req, res) => {
+  req.session.destroy((error) => {
+    if (error) {
+      console.error("Logout failed:", error);
+      res.status(500).json({ ok: false, message: "Unable to log out" });
+      return;
+    }
+
+    res.clearCookie("connect.sid");
+    res.json({ ok: true, message: "Logged out" });
   });
 });
 

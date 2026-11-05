@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { MongoClient } from 'mongodb';
 
 const uri = process.env.MONGO_URI;
 const client = new MongoClient(uri);
@@ -12,7 +13,7 @@ export async function connectDB() {
   try {
     await client.connect();
     // 指定你的数据库名称（例如 flight_booking_db）
-    dbInstance = client.db('flight_booking_db');
+    dbInstance = client.db('Account');
     console.log('✅ Connected to MongoDB successfully (Native Driver)!');
     return dbInstance;
   } catch (error) {

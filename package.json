@@ -2,9 +2,9 @@
   "name": "Student_ID_eie4432_lab4",
   "version": "1.0",
   "type": "module",
-  "main": "src/Dashboard.js",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node src/Dashboard.js",
+    "start": "node src/index.js",
     "dev": "nodemon --watch \"src/**\" --ext \"js,json,mjs\" --exec \"npm start\""
   },
   "dependencies": {

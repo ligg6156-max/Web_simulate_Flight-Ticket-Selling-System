@@ -1,14 +1,31 @@
+import "dotenv/config";
 import express from "express";
+import session from "express-session";
+import { connectDB } from "./db.js";
+import loginRouter from "./login.js";
+
 const app = express();
 const PORT = 8080;
 
 
-// Serve static files from the "static" folder
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+app.use("/auth", loginRouter);
 app.use(express.static("static"));
-// Redirect the root path to the existing Lab 3 home page
+
 app.get("/", (req, res) => {
   res.redirect("/Dashboard.html");
 });
-app.listen(PORT, () => {
-  console.log(`Server is listening on http://127.0.0.1:${PORT}`);
+
+async function startServer() {
+  await connectDB();
+  app.listen(PORT, () => {
+    console.log(`Server is listening on http://127.0.0.1:${PORT}`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error("Server startup failed:", error);
+  process.exitCode = 1;
 });

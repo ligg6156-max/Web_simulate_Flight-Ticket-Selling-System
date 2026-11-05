@@ -26,10 +26,10 @@ btnLogin.addEventListener('click', async () => {
 
   if (response.ok && data.user) {
     alert(`Logged in as ${data.user.username} (${data.user.role})`);
-    window.location.href = '/home.html';
+    window.location.href = '/Dashboard.html';
   } else if (data.message) {
     alert(data.message);
-  } else {S
+  } else {
     alert('Unknown error');
   }
 });
