@@ -6,27 +6,44 @@ const PORT = 8080;
 const uri = process.env.MONGO_URI;
 const client = new MongoClient(uri);
 
-async function run() {
-try {
-await client.connect();
-const db = client.db('sample_mflix');//change this to your database name
-const collection = db.collection('movies');//change this to your collection name
-// Find the first document in the collection
-const first = await collection.findOne();
-console.log(first);
-} finally {
-// Close the database connection when finished or an error occurs
-await client.close();
-}
-}
-run().catch(console.error);
+async function startServer() {
+  try {
+    // 1. Connect to MongoDB first
+    await client.connect();
+    console.log("Connected successfully to MongoDB");
 
-// Serve static files from the "static" folder
-app.use(express.static("static"));
-// Redirect the root path to the existing Lab 3 home page
-app.get("/", (req, res) => {
-  res.redirect("/Dashboard.html");
-});
-app.listen(PORT, () => {
-  console.log(`Server is listening on http://127.0.0.1:${PORT}`);
-});
+    const db = client.db('sample_mflix'); // change to your database name
+    const collection = db.collection('users'); // change to your collection name
+
+    // Middleware
+    app.use(express.json());
+    app.use(express.static("static"));
+
+    // Redirect root path to Dashboard.html
+    app.get("/", (req, res) => {
+      res.redirect("/Dashboard.html");
+    });
+
+    // 2. API route to fetch users
+    app.get('/api/users', async (req, res) => {
+      try {
+        // Use .toArray() to convert the cursor into an array of documents
+        const users = await collection.find({}).toArray();
+        res.status(200).json(users);
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch users', details: err.message });
+      }
+    });
+
+    // 3. Start the server only after the DB connection succeeds
+    app.listen(PORT, () => {
+      console.log(`Server is listening on http://127.0.0.1:${PORT}`);
+    });
+
+  } catch (err) {
+    console.error("Database connection failed:", err);
+    process.exit(1);
+  }
+}
+
+startServer();
