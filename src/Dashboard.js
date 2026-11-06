@@ -1,19 +1,11 @@
-import 'dotenv/config';
 import express from "express";
-import { MongoClient } from 'mongodb'
+import { connectToDatabase, getTickets } from './db.js';
 const app = express();
 const PORT = 8080;
-const uri = process.env.MONGO_URI;
-const client = new MongoClient(uri);
 
 async function startServer() {
   try {
-    // 1. Connect to MongoDB first
-    await client.connect();
-    console.log("Connected successfully to MongoDB");
-
-    const db = client.db('flight_system'); // change to your database name
-    const collection = db.collection('ticket'); // change to your collection name
+    await connectToDatabase();
 
     // Middleware
     app.use(express.json());
@@ -27,8 +19,17 @@ async function startServer() {
     // 2. API route to fetch data from ticket
     app.get('/api/ticket', async (req, res) => {
       try {
-        // Use .toArray() to convert the cursor into an array of documents
-        const users = await collection.find({}).toArray();
+        const tickets = await getTickets();
+        res.status(200).json(tickets);
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch tickets', details: err.message });
+      }
+    });
+
+    // 3. API route to fetch data from user
+    app.get('/api/user', async (req, res) => {
+      try {
+        const users = await getUsers();
         res.status(200).json(users);
       } catch (err) {
         res.status(500).json({ error: 'Failed to fetch users', details: err.message });
