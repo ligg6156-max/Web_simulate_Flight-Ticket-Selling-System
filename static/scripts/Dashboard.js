@@ -1,3 +1,56 @@
+function getArrivalTime(departureTime, timeNeededMinutes) {
+    const duration = Number(timeNeededMinutes);
+    const timeMatch = String(departureTime).match(/T(\d{2}):(\d{2})/);
+
+    if (!timeMatch || !Number.isFinite(duration)) {
+        return 'Unavailable';
+    }
+
+    const departureDate = new Date(Date.UTC(2000, 0, 1, Number(timeMatch[1]), Number(timeMatch[2])));
+    departureDate.setUTCMinutes(departureDate.getUTCMinutes() + duration);
+
+    return departureDate.toISOString().slice(11, 16);
+}
+
+function getDepartureTime(departureTime) {
+    const timeMatch = String(departureTime).match(/T(\d{2}):(\d{2})/);
+    return timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : 'Unavailable';
+}
+
+function getSelectedCode(selectId) {
+    const value = document.getElementById(selectId).value;
+    const codeMatch = value.match(/\(([A-Z]{3})\)/);
+    return codeMatch ? codeMatch[1] : '';
+}
+
+function filterFlights() {
+    const originCode = getSelectedCode('origin');
+    const destinationCode = getSelectedCode('destination');
+    const departureDate = document.getElementById('departureDate').value;
+    const flightCards = document.querySelectorAll('#ticket_info_list .flight-card');
+    let visibleCount = 0;
+
+    flightCards.forEach(flightCard => {
+        const matchesOrigin = !originCode || flightCard.dataset.originCode === originCode;
+        const matchesDestination =
+            !destinationCode || flightCard.dataset.destinationCode === destinationCode;
+        const matchesDate = !departureDate || flightCard.dataset.departureDate === departureDate;
+        const isVisible = matchesOrigin && matchesDestination && matchesDate;
+
+        flightCard.hidden = !isVisible;
+        if (isVisible) {
+            visibleCount += 1;
+        }
+    });
+
+    const searchStatus = document.getElementById('searchStatus');
+    searchStatus.textContent = visibleCount > 0
+        ? `${visibleCount} flight${visibleCount === 1 ? '' : 's'} found.`
+        : 'No flights found for the selected route and date.';
+
+    document.getElementById('flights').scrollIntoView({ behavior: 'smooth' });
+}
+
 async function fetchticket_info() {
     const ticketInfoElement = document.getElementById('ticket_info_list');
 
@@ -15,17 +68,21 @@ async function fetchticket_info() {
 
         const ticket_info = await response.json();
 
-        if (ticket_info.length === 0) {
-            ticketInfoElement.innerHTML = '<p class="p-4 mb-0">No tickets found in the database.</p>';
-            return;
-        }
-
-        ticketInfoElement.innerHTML = '';
+        ticketInfoElement
+            .querySelectorAll('[data-ticket-source="database"]')
+            .forEach(ticketArticle => ticketArticle.remove());
 
         ticket_info.forEach(ticket => {
-            const ticketInfoCard = `
+            const ticketArticle = document.createElement('article');
+            ticketArticle.className = 'card flight-card mb-3';
+            ticketArticle.setAttribute('aria-label', 'Hong Kong to Tokyo flight');
+            ticketArticle.dataset.ticketSource = 'database';
+            ticketArticle.dataset.originCode = 'HKG';
+            ticketArticle.dataset.destinationCode = 'HND';
+            ticketArticle.dataset.departureDate = String(ticket.Time_departure).slice(0, 10);
+            ticketArticle.innerHTML = `
             <div class="row g-0">
-              <div class="col-md-9 p-4">
+               <div class="col-md-9 p-4" >
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-4">
                   <svg class="icon text-primary" aria-hidden="true">
                     <use href="#icon-plane"></use>
@@ -37,46 +94,45 @@ async function fetchticket_info() {
 
                 <div class="row align-items-center text-center g-2">
                   <div class="col-4 text-start">
-                    <div class="flight-time">${ticket.Time_departure}</div>
+                    <div class="flight-time">${getDepartureTime(ticket.Time_departure)}</div>
                     <div class="airport-code text-primary">HKG</div>
                     <div class="small text-secondary">${ticket.destination}</div>
                   </div>
 
                   <div class="col-4">
-                    <div class="small text-secondary">4h 10m</div>
+                    <div class="small text-secondary">${ticket.Time_need_minute} min</div>
                     <div class="route-line">
                       <svg class="icon" aria-hidden="true">
                         <use href="#icon-plane"></use>
                       </svg>
                     </div>
-                    <div class="small text-success">Direct</div>
+                    <div class="small text-success">${ticket.flight_type}</div>
                   </div>
 
                   <div class="col-4 text-end">
-                    <div class="flight-time">13:40</div>
+                    <div class="flight-time">${getArrivalTime(ticket.Time_departure, ticket.Time_need_minute)}</div>
                     <div class="airport-code text-primary">HND</div>
-                    <div class="small text-secondary">Tokyo Haneda</div>
+                    <div class="small text-secondary">${ticket.departure}</div>
                   </div>
                 </div>
 
                 <div class="d-flex flex-wrap gap-3 mt-4 small text-secondary">
-                  <span>20 Nov 2026</span>
-                  <span>20 kg checked baggage</span>
-                  <span>Meal included</span>
+                  <span>${ticket.Ticket_info}</span>
                 </div>
               </div>
 
               <div class="col-md-3 fare-panel p-4 d-flex flex-column justify-content-center">
                 <span class="small text-secondary">One way from</span>
-                <div class="h3 fw-bold mb-1">HK$2,180</div>
+                <div class="h3 fw-bold mb-1">${ticket.price}</div>
                 <span class="small text-secondary mb-3">Taxes included</span>
-                <span class="availability text-success mb-3">24 seats available</span>
+                <span class="availability text-success mb-3">${ticket.seats_ava} seats available</span>
                 <button type="button" class="btn btn-primary">
                   Select flight
                 </button>
               </div>
-            </div>`;
-            ticketInfoElement.insertAdjacentHTML('beforeend', ticketInfoCard);
+            </div>
+          `;
+            ticketInfoElement.appendChild(ticketArticle);
         });
     } catch (error) {
         console.error('Error:', error);
@@ -84,5 +140,7 @@ async function fetchticket_info() {
             '<p class="error p-4 mb-0">Could not load tickets. Make sure the server is running.</p>';
     }
 }
+
+document.getElementById('searchFlights').addEventListener('click', filterFlights);
 // Run the function when the page loads
 fetchticket_info();

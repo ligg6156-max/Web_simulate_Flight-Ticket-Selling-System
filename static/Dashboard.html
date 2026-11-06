@@ -433,7 +433,7 @@
       </div>
     </section>
 
-    <!-- Search UI: deliberately no search handler -->
+    <!-- Search UI -->
     <section class="container" aria-labelledby="searchHeading">
       <div class="search-panel bg-white rounded-4 p-4">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
@@ -507,8 +507,9 @@
 
           <div class="col-xl-2">
             <button type="button"
+                    id="searchFlights"
                     class="btn btn-primary w-100 py-3"
-                    title="Search is a visual placeholder in this prototype">
+                    title="Search available flights">
               <svg class="icon me-1" aria-hidden="true">
                 <use href="#icon-search"></use>
               </svg>
@@ -517,9 +518,8 @@
           </div>
         </div>
 
-        <p class="small text-secondary mb-0 mt-3">
-          Interface preview: flight information is sample data.
-          Search, filters, and booking controls are not connected.
+        <p id="searchStatus" class="small text-secondary mb-0 mt-3">
+          Search available flights by route and departure date.
         </p>
       </div>
     </section>
@@ -534,10 +534,6 @@
             Departing from Hong Kong · 20 November 2026 · One way
           </p>
         </div>
-
-        <span class="badge bg-white text-secondary border rounded-pill px-3 py-2">
-          4 sample flights
-        </span>
       </div>
 
       <div class="row g-4">
@@ -635,7 +631,7 @@
         </aside>
 
         <!-- Results -->
-        <div class="col-lg-9">
+        <div class="col-lg-9" id="ticket_info_list">
           <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
             <p class="small text-secondary mb-0">
               One-way fares per adult · Prices in HKD
@@ -655,7 +651,12 @@
           </div>
 
           <!-- Flight 1 to delete because i want use database -->
-          <article class="card flight-card mb-3" aria-label="Hong Kong to Tokyo flight">
+           <!-- it is no show please delect-->
+          <article class="card flight-card mb-3"
+                   data-origin-code="HKG"
+                   data-destination-code="HND"
+                   data-departure-date="2026-11-20"
+                   aria-label="Hong Kong to Tokyo flight">
             <div class="px-4 py-2 soft-blue small fw-semibold">
               Recommended · A perfect start to your Tokyo getaway
             </div>
@@ -714,17 +715,12 @@
             </div>
           </article>
 
-        <!---->
+          <!---->
 
-        <article class="card flight-card mb-3" id="ticket_info_card" aria-label="Hong Kong to Tokyo flight">
-            <div id="ticket_info_list"></div>
-        </article>
-      </div>
           <p class="small text-secondary mt-3 mb-0">
             All departure and arrival times are local.
             Availability and fares shown are illustrative, not live.
           </p>
-        </div>
       </div>
     </section>
 
