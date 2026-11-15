@@ -1,2 +1,25 @@
-import express from "express";
-import { getUsers } from './db.js';
+import { verifyUser } from './db.js';
+
+export async function login(req, res) {
+  const { username, password } = req.body;
+
+  if (typeof username !== 'string' || typeof password !== 'string' ||
+      !username.trim() || !password) {
+    res.status(400).json({ success: false, message: 'Username and password are required.' });
+    return;
+  }
+
+  try {
+    const user = await verifyUser(username.trim(), password);
+
+    if (!user) {
+      res.status(401).json({ success: false, message: 'Invalid username or password.' });
+      return;
+    }
+
+    res.status(200).json({ success: true, message: 'Login successful.' });
+  } catch (err) {
+    console.error('Login verification failed:', err);
+    res.status(500).json({ success: false, message: 'Unable to verify login.' });
+  }
+}

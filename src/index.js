@@ -1,5 +1,6 @@
 import express from "express";
-import { connectToDatabase, getTickets } from './db.js';
+import { connectToDatabase, getTickets, getUsers } from './db.js';
+import { login } from './login.js';
 const app = express();
 const PORT = 8080;
 
@@ -9,6 +10,7 @@ async function startServer() {
 
     // Middleware
     app.use(express.json());
+    app.use(express.urlencoded({ extended: false }));
     app.use(express.static("static"));
 
     // Redirect root path to Dashboard.html
@@ -24,6 +26,17 @@ async function startServer() {
       } catch (err) {
         res.status(500).json({ error: 'Failed to fetch tickets', details: err.message });
       }
+    });
+
+    app.post('/api/login', login);
+
+    app.use((err, req, res, next) => {
+      if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        res.status(400).json({ success: false, message: 'Invalid request data.' });
+        return;
+      }
+
+      next(err);
     });
 
     // 3. API route to fetch data from user

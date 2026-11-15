@@ -17,7 +17,7 @@ export async function connectToDatabase() {
 
   const database = client.db('flight_system');
   ticketCollection = database.collection('ticket');
-  userCollection = database.collection('user');
+  userCollection = database.collection('account');
 }
 
 export async function getTickets() {
@@ -34,4 +34,12 @@ export async function getUsers() {
   }
 
   return userCollection.find({}).toArray();
+}
+
+export async function verifyUser(username, password) {
+  if (!userCollection) {
+    throw new Error('Database connection has not been initialized.');
+  }
+
+  return userCollection.findOne({ username, password });
 }
