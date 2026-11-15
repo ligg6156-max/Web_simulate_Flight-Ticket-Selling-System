@@ -23,10 +23,23 @@ function getSelectedCode(selectId) {
     return codeMatch ? codeMatch[1] : '';
 }
 
+const airportCodes = {
+    'Hong Kong': 'HKG',
+    'Tokyo Haneda': 'HND',
+    'Singapore': 'SIN',
+    'Seoul Incheon': 'ICN',
+    'Bangkok': 'BKK'
+};
+
+function getAirportCode(airportName) {
+    return airportCodes[String(airportName).trim()] || '';
+}
+
 function filterFlights() {
     const originCode = getSelectedCode('origin');
     const destinationCode = getSelectedCode('destination');
     const departureDate = document.getElementById('departureDate').value;
+    const travellersType = document.getElementById('travellers').value;
     const flightCards = document.querySelectorAll('#ticket_info_list .flight-card');
     let visibleCount = 0;
 
@@ -35,7 +48,9 @@ function filterFlights() {
         const matchesDestination =
             !destinationCode || flightCard.dataset.destinationCode === destinationCode;
         const matchesDate = !departureDate || flightCard.dataset.departureDate === departureDate;
-        const isVisible = matchesOrigin && matchesDestination && matchesDate;
+        const matchesTravellers =
+            !travellersType || flightCard.dataset.travellersType === travellersType;
+        const isVisible = matchesOrigin && matchesDestination && matchesDate && matchesTravellers;
 
         flightCard.hidden = !isVisible;
         if (isVisible) {
@@ -75,10 +90,14 @@ async function fetchticket_info() {
         ticket_info.forEach(ticket => {
             const ticketArticle = document.createElement('article');
             ticketArticle.className = 'card flight-card mb-3';
-            ticketArticle.setAttribute('aria-label', 'Hong Kong to Tokyo flight');
+            ticketArticle.setAttribute(
+                'aria-label',
+                `${ticket.departure} to ${ticket.destination} flight`
+            );
             ticketArticle.dataset.ticketSource = 'database';
-            ticketArticle.dataset.originCode = 'HKG';
-            ticketArticle.dataset.destinationCode = 'HND';
+            ticketArticle.dataset.originCode = getAirportCode(ticket.departure);
+            ticketArticle.dataset.destinationCode = getAirportCode(ticket.destination);
+            ticketArticle.dataset.travellersType = String(ticket.seats_type).trim();
             ticketArticle.dataset.departureDate = String(ticket.Time_departure).slice(0, 10);
             ticketArticle.innerHTML = `
             <div class="row g-0">
@@ -95,8 +114,8 @@ async function fetchticket_info() {
                 <div class="row align-items-center text-center g-2">
                   <div class="col-4 text-start">
                     <div class="flight-time">${getDepartureTime(ticket.Time_departure)}</div>
-                    <div class="airport-code text-primary">HKG</div>
-                    <div class="small text-secondary">${ticket.destination}</div>
+                    <div class="airport-code text-primary">${ticketArticle.dataset.originCode}</div>
+                    <div class="small text-secondary">${ticket.departure}</div>
                   </div>
 
                   <div class="col-4">
@@ -111,8 +130,8 @@ async function fetchticket_info() {
 
                   <div class="col-4 text-end">
                     <div class="flight-time">${getArrivalTime(ticket.Time_departure, ticket.Time_need_minute)}</div>
-                    <div class="airport-code text-primary">HND</div>
-                    <div class="small text-secondary">${ticket.departure}</div>
+                    <div class="airport-code text-primary">${ticketArticle.dataset.destinationCode}</div>
+                    <div class="small text-secondary">${ticket.destination}</div>
                   </div>
                 </div>
 
@@ -134,6 +153,8 @@ async function fetchticket_info() {
           `;
             ticketInfoElement.appendChild(ticketArticle);
         });
+
+        filterFlights();
     } catch (error) {
         console.error('Error:', error);
         ticketInfoElement.innerHTML =

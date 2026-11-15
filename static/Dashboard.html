@@ -442,7 +442,7 @@
             Explore more. Fly better.
           </span>
         </div>
-
+            <!--trip type radio buttons-->
         <fieldset class="mb-3">
           <legend class="visually-hidden">Journey type</legend>
 
@@ -470,7 +470,8 @@
           <div class="col-md-6 col-xl-3">
             <label class="form-label" for="origin">FROM</label>
             <select id="origin" class="form-select">
-              <option selected>Hong Kong (HKG)</option>
+              <option selected>All origins</option>
+              <option>Hong Kong (HKG)</option>
               <option>Tokyo Haneda (HND)</option>
               <option>Singapore (SIN)</option>
               <option>Seoul Incheon (ICN)</option>
@@ -481,6 +482,7 @@
             <label class="form-label" for="destination">TO</label>
             <select id="destination" class="form-select">
               <option selected>All destinations</option>
+              <option>Hong Kong (HKG)</option>
               <option>Tokyo Haneda (HND)</option>
               <option>Singapore (SIN)</option>
               <option>Seoul Incheon (ICN)</option>
@@ -492,16 +494,14 @@
             <label class="form-label" for="departureDate">DEPARTURE</label>
             <input id="departureDate"
                    type="date"
-                   class="form-control"
-                   value="2026-11-20">
+                   class="form-control">
           </div>
 
           <div class="col-md-6 col-xl-2">
-            <label class="form-label" for="travellers">TRAVELLERS & CLASS</label>
+            <label class="form-label" for="travellers">CLASS</label>
             <select id="travellers" class="form-select">
-              <option>1 adult · Economy</option>
-              <option>2 adults · Economy</option>
-              <option>1 adult · Business</option>
+              <option selected>Economy</option>
+              <option>Business</option>
             </select>
           </div>
 
@@ -649,73 +649,6 @@
               </select>
             </div>
           </div>
-
-          <!-- Flight 1 to delete because i want use database -->
-           <!-- it is no show please delect-->
-          <article class="card flight-card mb-3"
-                   data-origin-code="HKG"
-                   data-destination-code="HND"
-                   data-departure-date="2026-11-20"
-                   aria-label="Hong Kong to Tokyo flight">
-            <div class="px-4 py-2 soft-blue small fw-semibold">
-              Recommended · A perfect start to your Tokyo getaway
-            </div>
-
-            <div class="row g-0">
-              <div class="col-md-9 p-4">
-                <div class="d-flex flex-wrap align-items-center gap-2 mb-4">
-                  <svg class="icon text-primary" aria-hidden="true">
-                    <use href="#icon-plane"></use>
-                  </svg>
-                  <span class="small fw-bold">SkyBlue Airways</span>
-                  <span class="flight-number">SB 208 · Airbus A321neo</span>
-                  <span class="badge soft-blue ms-sm-auto">Economy</span>
-                </div>
-
-                <div class="row align-items-center text-center g-2">
-                  <div class="col-4 text-start">
-                    <div class="flight-time">08:30</div>
-                    <div class="airport-code text-primary">HKG</div>
-                    <div class="small text-secondary">Hong Kong</div>
-                  </div>
-
-                  <div class="col-4">
-                    <div class="small text-secondary">4h 10m</div>
-                    <div class="route-line">
-                      <svg class="icon" aria-hidden="true">
-                        <use href="#icon-plane"></use>
-                      </svg>
-                    </div>
-                    <div class="small text-success">Direct</div>
-                  </div>
-
-                  <div class="col-4 text-end">
-                    <div class="flight-time">13:40</div>
-                    <div class="airport-code text-primary">HND</div>
-                    <div class="small text-secondary">Tokyo Haneda</div>
-                  </div>
-                </div>
-
-                <div class="d-flex flex-wrap gap-3 mt-4 small text-secondary">
-                  <span>20 Nov 2026</span>
-                  <span>20 kg checked baggage</span>
-                  <span>Meal included</span>
-                </div>
-              </div>
-
-              <div class="col-md-3 fare-panel p-4 d-flex flex-column justify-content-center">
-                <span class="small text-secondary">One way from</span>
-                <div class="h3 fw-bold mb-1">HK$2,180</div>
-                <span class="small text-secondary mb-3">Taxes included</span>
-                <span class="availability text-success mb-3">24 seats available</span>
-                <button type="button" class="btn btn-primary">
-                  Select flight
-                </button>
-              </div>
-            </div>
-          </article>
-
-          <!---->
 
           <p class="small text-secondary mt-3 mb-0">
             All departure and arrival times are local.
