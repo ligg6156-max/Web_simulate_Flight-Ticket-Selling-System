@@ -1,6 +1,7 @@
 import express from "express";
 import { connectToDatabase, getTickets, getUsers } from './db.js';
 import { login } from './login.js';
+import { register } from './Register.js';
 const app = express();
 const PORT = 8080;
 
@@ -29,6 +30,7 @@ async function startServer() {
     });
 
     app.post('/api/login', login);
+    app.post('/api/register', register);
 
     app.use((err, req, res, next) => {
       if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {

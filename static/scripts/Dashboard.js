@@ -13,8 +13,8 @@ function getArrivalTime(departureTime, timeNeededMinutes) {
 }
 
 function getDepartureTime(departureTime) {
-    const timeMatch = String(departureTime).match(/T(\d{2}):(\d{2})/);
-    return timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : 'Unavailable';
+    const time = String(departureTime).split('T')[1];
+    return time ? time.slice(0, 5) : 'Unavailable';
 }
 
 function getSelectedCode(selectId) {
@@ -59,8 +59,8 @@ function filterFlights() {
     });
 
     const searchStatus = document.getElementById('searchStatus');
-    searchStatus.textContent = visibleCount > 0
-        ? `${visibleCount} flight${visibleCount === 1 ? '' : 's'} found.`
+    searchStatus.textContent = visibleCount
+        ? `${visibleCount} ${visibleCount === 1 ? 'flight' : 'flights'} found.`
         : 'No flights found for the selected route and date.';
 
     document.getElementById('flights').scrollIntoView({ behavior: 'smooth' });
@@ -145,13 +145,17 @@ async function fetchticket_info() {
                 <div class="h3 fw-bold mb-1">${ticket.price}</div>
                 <span class="small text-secondary mb-3">Taxes included</span>
                 <span class="availability text-success mb-3">${ticket.seats_ava} seats available</span>
-                <button type="button" class="btn btn-primary">
+                <button type="button" class="btn btn-primary select-flight">
                   Select flight
                 </button>
               </div>
             </div>
           `;
             ticketInfoElement.appendChild(ticketArticle);
+            ticketArticle.querySelector('.select-flight').addEventListener('click', () => {
+                sessionStorage.setItem('selectedFlight', JSON.stringify(ticket));
+                window.location.href = 'Booking.html';
+            });
         });
 
         filterFlights();

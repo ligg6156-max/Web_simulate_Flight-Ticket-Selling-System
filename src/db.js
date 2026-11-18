@@ -43,3 +43,23 @@ export async function verifyUser(username, password) {
 
   return userCollection.findOne({ username, password });
 }
+
+export async function createUser(username, password, role) {
+  if (!userCollection) {
+    throw new Error('Database connection has not been initialized.');
+  }
+
+  const existingUser = await userCollection.findOne({ username });
+  if (existingUser) {
+    return false;
+  }
+
+  await userCollection.insertOne({
+    username,
+    password,
+    role,
+    enabled: true
+  });
+
+  return true;
+}
