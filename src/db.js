@@ -10,6 +10,8 @@ if (!uri) {
 const client = new MongoClient(uri);
 let ticketCollection;
 let userCollection;
+let seatCollection;
+let orderCollection;
 
 export async function connectToDatabase() {
   await client.connect();
@@ -18,6 +20,8 @@ export async function connectToDatabase() {
   const database = client.db('flight_system');
   ticketCollection = database.collection('ticket');
   userCollection = database.collection('account');
+  seatCollection = database.collection('Seat');
+  orderCollection = database.collection('order');
 }
 
 export async function getTickets() {
@@ -34,6 +38,61 @@ export async function getUsers() {
   }
 
   return userCollection.find({}).toArray();
+}
+
+export async function getSeatState(flightsNo) {
+  if (!seatCollection) {
+    throw new Error('Database connection has not been initialized.');
+  }
+
+  const normalizedFlightsNo = flightsNo.replace(/\s+/g, '').toUpperCase();
+  const seatStates = await seatCollection.find({}).toArray();
+
+  return seatStates.find(seatState =>
+    String(seatState.flights_No || '').replace(/\s+/g, '').toUpperCase()
+      === normalizedFlightsNo
+  ) || null;
+}
+
+export async function addOccupiedSeat(flightsNo, seatId) {
+  if (!seatCollection) {
+    throw new Error('Database connection has not been initialized.');
+  }
+
+  const seatState = await getSeatState(flightsNo);
+  if (!seatState) {
+    return null;
+  }
+
+  if (!Array.isArray(seatState.seat)) {
+    throw new Error('The Seat document has an invalid seat array.');
+  }
+
+  if (seatState.seat.includes(seatId)) {
+    return seatState;
+  }
+
+  await seatCollection.updateOne(
+    { _id: seatState._id },
+    { $addToSet: { seat: seatId } }
+  );
+
+  return {
+    ...seatState,
+    seat: [...seatState.seat, seatId]
+  };
+}
+
+export async function createOrder(order) {
+  if (!orderCollection) {
+    throw new Error('Database connection has not been initialized.');
+  }
+
+  const result = await orderCollection.insertOne(order);
+  return {
+    ...order,
+    _id: result.insertedId
+  };
 }
 
 export async function verifyUser(username, password) {

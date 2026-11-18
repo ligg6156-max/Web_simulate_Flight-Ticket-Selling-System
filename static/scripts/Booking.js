@@ -1,6 +1,21 @@
 const flightSummary = document.getElementById('flightSummary');
 const selectedFlight = sessionStorage.getItem('selectedFlight');
 
+checkLogin();
+
+async function checkLogin() {
+    try {
+        const response = await fetch('/api/session');
+        const session = await response.json();
+        if (!response.ok || !session.authenticated) {
+            window.location.href = 'login.html';
+        }
+    } catch (error) {
+        console.error('Login check failed:', error);
+        window.location.href = 'login.html';
+    }
+}
+
 if (!selectedFlight) {
     flightSummary.innerHTML = `
         <p class="mb-3">No flight has been selected.</p>
@@ -55,91 +70,143 @@ if (!selectedFlight) {
     const dismissButton = document.getElementById('dismissSeat');
     const rows = ['A', 'B', 'C', 'D', 'E', 'F'];
     const columns = [1, 2, 3, 4, 5, 6];
-    const storageKey = `occupiedSeats_${flight._id || flight.flights_No}`;
-    let occupiedSeats = JSON.parse(localStorage.getItem(storageKey)) || [];
     let selectedSeat = null;
 
-    if (occupiedSeats.length === 0) {
-        const allSeats = rows.flatMap(row => columns.map(column => `${row}${column}`));
-        const seatCount = allSeats.length;
-        const availableCount = Math.max(0, Math.min(seatCount, Number(flight.seats_ava) || 0));
-        const occupiedCount = seatCount - availableCount;
-        const seed = String(flight._id || flight.flights_No || 'flight');
-        const startIndex = [...seed].reduce((total, character) =>
-            total + character.charCodeAt(0), 0) % seatCount;
+    loadSeatState();
 
-        occupiedSeats = Array.from(
-            { length: occupiedCount },
-            (_, index) => allSeats[(startIndex + index) % seatCount]
-        );
-        localStorage.setItem(storageKey, JSON.stringify(occupiedSeats));
+    async function loadSeatState() {
+        try {
+            const flightsNo = String(flight.flights_No || '').replace(/\s+/g, '');
+            const response = await fetch(`/api/seat?flights_No=${encodeURIComponent(flightsNo)}`);
+            const seatState = await response.json();
+
+            if (!response.ok) {
+                throw new Error(seatState.error || 'Failed to fetch seat state.');
+            }
+
+            const occupiedSeats = getOccupiedSeats(seatState.seat);
+            renderSeatMap(occupiedSeats);
+        } catch (error) {
+            console.error('Error loading seat state:', error);
+            seatMap.innerHTML = '';
+            selectedSeatText.textContent = 'Could not load seat availability.';
+        }
     }
 
-    rows.forEach(row => {
-        seatMap.appendChild(createSeatLabel(row));
-        columns.forEach(column => {
-            const seatId = `${row}${column}`;
-            if (column === 4) {
-                seatMap.insertAdjacentHTML('beforeend', '<span class="seat-row-label"></span>');
-            }
-            const seat = document.createElement('button');
-            seat.type = 'button';
-            seat.className = 'seat';
-            seat.textContent = seatId;
-            seat.dataset.seat = seatId;
+    function renderSeatMap(occupiedSeats) {
+        rows.forEach(row => {
+            seatMap.appendChild(createSeatLabel(row));
+            columns.forEach(column => {
+                const seatId = `${row}${column}`;
+                if (column === 4) {
+                    seatMap.insertAdjacentHTML('beforeend', '<span class="seat-row-label"></span>');
+                }
+                const seat = document.createElement('button');
+                seat.type = 'button';
+                seat.className = 'seat';
+                seat.textContent = seatId;
+                seat.dataset.seat = seatId;
 
-            if (occupiedSeats.includes(seatId)) {
-                seat.classList.add('occupied');
-                seat.disabled = true;
-            }
-
-            seat.addEventListener('click', () => {
-                if (seat.classList.contains('occupied')) {
-                    return;
+                if (occupiedSeats.includes(seatId)) {
+                    seat.classList.add('occupied');
+                    seat.disabled = true;
                 }
 
-                document.querySelectorAll('.seat.selected').forEach(item => {
-                    item.classList.remove('selected');
+                seat.addEventListener('click', () => {
+                    document.querySelectorAll('.seat.selected').forEach(item => {
+                        item.classList.remove('selected');
+                    });
+
+                    seat.classList.add('selected');
+                    selectedSeat = seatId;
+                    selectedSeatText.textContent = `Selected seat: ${seatId}`;
+                    confirmButton.disabled = false;
+                    dismissButton.disabled = false;
                 });
 
-                seat.classList.add('selected');
-                selectedSeat = seatId;
-                selectedSeatText.textContent = `Selected seat: ${seatId}`;
+                seatMap.appendChild(seat);
+            });
+        });
+
+        confirmButton.addEventListener('click', async () => {
+            if (!selectedSeat) {
+                return;
+            }
+
+            const seatToConfirm = selectedSeat;
+            confirmButton.disabled = true;
+            dismissButton.disabled = true;
+            selectedSeatText.textContent = 'Saving seat...';
+
+            try {
+                const flightsNo = String(flight.flights_No || '').replace(/\s+/g, '');
+                const response = await fetch('/api/seat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        flights_No: flightsNo,
+                        seat: seatToConfirm
+                    })
+                });
+                const seatState = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(seatState.error || 'Failed to update seat state.');
+                }
+
+                const seat = seatMap.querySelector(`[data-seat="${seatToConfirm}"]`);
+                seat.classList.remove('selected');
+                seat.classList.add('occupied');
+                seat.disabled = true;
+
+                selectedSeatText.textContent = `Seat ${seatToConfirm} booked successfully`;
+                selectedSeat = null;
+
+                sessionStorage.setItem('selectedBooking', JSON.stringify({
+                    flight,
+                    seat: seatToConfirm
+                }));
+
+                setTimeout(() => {
+                    window.location.href = 'Payment.html';
+                }, 500);
+            } catch (error) {
+                console.error('Error updating seat state:', error);
+                selectedSeatText.textContent = error.message;
                 confirmButton.disabled = false;
                 dismissButton.disabled = false;
-            });
-
-            seatMap.appendChild(seat);
+            }
         });
-    });
 
-    confirmButton.addEventListener('click', () => {
-        if (!selectedSeat) {
-            return;
+        dismissButton.addEventListener('click', () => {
+            document.querySelectorAll('.seat.selected').forEach(item => {
+                item.classList.remove('selected');
+            });
+            selectedSeat = null;
+            selectedSeatText.textContent = 'Click an available seat';
+            confirmButton.disabled = true;
+            dismissButton.disabled = true;
+        });
+    }
+}
+
+function getOccupiedSeats(seats) {
+    if (!Array.isArray(seats)) {
+        throw new Error('Seat state must be an array.');
+    }
+
+    return seats.flatMap(seat => {
+        if (typeof seat === 'string') {
+            return [seat];
         }
 
-        occupiedSeats.push(selectedSeat);
-        localStorage.setItem(storageKey, JSON.stringify(occupiedSeats));
+        if (seat && typeof seat === 'object' && typeof seat.seat === 'string') {
+            return seat.occupied === false || seat.state === 'available' ? [] : [seat.seat];
+        }
 
-        const seat = seatMap.querySelector(`[data-seat="${selectedSeat}"]`);
-        seat.classList.remove('selected');
-        seat.classList.add('occupied');
-        seat.disabled = true;
-
-        selectedSeatText.textContent = `Seat ${selectedSeat} booked successfully`;
-        selectedSeat = null;
-        confirmButton.disabled = true;
-        dismissButton.disabled = true;
-    });
-
-    dismissButton.addEventListener('click', () => {
-        document.querySelectorAll('.seat.selected').forEach(item => {
-            item.classList.remove('selected');
-        });
-        selectedSeat = null;
-        selectedSeatText.textContent = 'Click an available seat';
-        confirmButton.disabled = true;
-        dismissButton.disabled = true;
+        return [];
     });
 }
 

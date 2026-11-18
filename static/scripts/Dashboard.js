@@ -152,9 +152,21 @@ async function fetchticket_info() {
             </div>
           `;
             ticketInfoElement.appendChild(ticketArticle);
-            ticketArticle.querySelector('.select-flight').addEventListener('click', () => {
-                sessionStorage.setItem('selectedFlight', JSON.stringify(ticket));
-                window.location.href = 'Booking.html';
+            ticketArticle.querySelector('.select-flight').addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/api/session');
+                    const session = await response.json();
+                    if (!response.ok || !session.authenticated) {
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+                    sessionStorage.setItem('selectedFlight', JSON.stringify(ticket));
+                    window.location.href = 'Booking.html';
+                } catch (error) {
+                    console.error('Login check failed:', error);
+                    window.location.href = 'login.html';
+                }
             });
         });
 
